@@ -12,9 +12,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import bouda.med.company.auditing.ApplicationAuditAware;
+import bouda.med.company.shared.CodeGenerator;
 import bouda.med.company.user.UserDao;
+import jakarta.servlet.MultipartConfigElement;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -23,6 +27,22 @@ import lombok.RequiredArgsConstructor;
 public class ApplicationConfig {
 
     private final UserDao userDao;
+
+
+    @Bean
+  public WebMvcConfigurer corsConfigurer() {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173/")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
+      }
+
+    };
+  }
 
     @Bean
     public UserDetailsService userDetailsService(){
@@ -33,7 +53,7 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuditorAware<Long> auditorAware(){
+    public AuditorAware<Object> auditorAware(){
         return new ApplicationAuditAware();
     }
 
@@ -58,6 +78,20 @@ public class ApplicationConfig {
      @Bean
     public ModelMapper modelMapper() {
         return new ModelMapper();
+    }
+
+    @Bean
+    public CodeGenerator codeGenerator(){
+        return new CodeGenerator();
+
+    }
+
+    @Bean
+    public MultipartConfigElement multipartConfigElement() {
+        long maxFileSize = 500 * 1024 * 1024; // 500 MB en octets
+        long maxRequestSize = 500 * 1024 * 1024; // 500 MB en octets
+        int fileSizeThreshold = 0; // Vous pouvez ajuster cela en fonction de vos besoins
+        return new MultipartConfigElement(null, maxFileSize, maxRequestSize, fileSizeThreshold);
     }
 
 

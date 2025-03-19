@@ -10,11 +10,11 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-public class ApplicationAuditAware implements AuditorAware<Long>  {
+public class ApplicationAuditAware implements AuditorAware<Object>  {
 
     @Override
 
-    public Optional<Long> getCurrentAuditor() {
+    public Optional<Object> getCurrentAuditor() {
     Authentication authentication =
             SecurityContextHolder
                     .getContext()

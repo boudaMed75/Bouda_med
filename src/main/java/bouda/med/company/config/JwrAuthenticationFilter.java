@@ -6,6 +6,8 @@ import java.io.IOException;
 import jakarta.transaction.TransactionScoped;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import bouda.med.company.exception.EntityNotFoundException;
+import bouda.med.company.token.Token;
 import bouda.med.company.user.TokenDao;
 
 import jakarta.annotation.Nonnull;
@@ -30,9 +34,9 @@ import lombok.RequiredArgsConstructor;
 public class JwrAuthenticationFilter extends OncePerRequestFilter{
    
 
-    private JwtService jwtService;
-    private UserDetailsService userDetailsService;
-    private TokenDao tokenDao;
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
+    private final TokenDao tokenDao;
 
     @Override
     protected void doFilterInternal(
@@ -52,20 +56,31 @@ public class JwrAuthenticationFilter extends OncePerRequestFilter{
         final String userName ;
 
         if(authHeader == null || !authHeader.startsWith("Bearer")){
+            System.err.println("err");
             filterChain.doFilter(request, response);
             return;
         }
 
+        System.err.println("ok braarer exist");
+
         jwt = authHeader.substring(7);
         userName = jwtService.extractUsername(jwt);
 
+        System.err.println(userName);
         if(userName != null && SecurityContextHolder.getContext().getAuthentication() == null){
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userName);
             Boolean isTokenValid = tokenDao.findByToken(jwt)
                 .map(t -> !t.isExpired() && !t.isRevoked())
                 .orElse(false);
+            Token token = tokenDao.findByToken(jwt).orElseThrow(()->new EntityNotFoundException("aucun ele"));
+
+            System.out.println(token.expired);
+            System.out.println(token.revoked);
+            System.out.println(isTokenValid);
+            System.out.println(userDetails.getAuthorities());
             
             if(jwtService.isTokenValid(jwt, userDetails) && isTokenValid){
+                System.out.println("ok");
                 UsernamePasswordAuthenticationToken auToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
                     null,
@@ -78,6 +93,7 @@ public class JwrAuthenticationFilter extends OncePerRequestFilter{
 
                 SecurityContextHolder.getContext().setAuthentication(auToken);
             }
+
         }
 
         filterChain.doFilter(request, response);
